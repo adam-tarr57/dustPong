@@ -10,7 +10,7 @@ var cursors;
 var bar;
 var iWall;
 var dust;
-var lives = 3;
+var lives = 5;
 var score = 0;
 var scoreText;
 var livesText;
@@ -19,7 +19,7 @@ var introText;
 function create() 
 {
     scoreText = game.add.text(680, 550, 'Score: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
-    livesText = game.add.text(32, 550, 'Lives: 3', { font: "20px Arial", fill: "#ffffff", align: "left" });
+    livesText = game.add.text(32, 550, 'Lives: 5', { font: "20px Arial", fill: "#ffffff", align: "left" });
     
     //	Enable p2 physics
 	  game.physics.startSystem(Phaser.Physics.P2JS);
@@ -49,10 +49,10 @@ function create()
     iWall.body.setSize(1, 600, 1, -200);
     iWall.body.immovable = true;
 
-    dust = game.add.sprite(700, 200, 'dust', 'images/dust.png');
+    dust = game.add.sprite(700, Math.floor(Math.random() * (600)), 'dust', 'images/dust.png');
     dust.name = 'dust';
     game.physics.enable(dust, Phaser.Physics.ARCADE);
-    dust.body.velocity.setTo(-200,-200);
+    dust.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
     dust.body.collideWorldBounds = true;
     dust.body.bounce.set(1);
     
@@ -71,18 +71,21 @@ function update()
     	bar.body.moveDown(400);
     }
     
-    game.physics.arcade.collide(bar, dust, collisionHandler1, null, this);
-    game.physics.arcade.collide(iWall, dust, collisionHandler, null, this);
+    game.physics.arcade.collide(bar, dust, dustbarCollision, null, this);
+    game.physics.arcade.collide(iWall, dust, dustiWallCollision, null, this);
 
 }
 
-function collisionHandler1 (obj1, obj2) {
+function dustbarCollision (obj1, obj2) {
 
     dust.kill();
+    
+    score += 10;
+    scoreText.text ='Score: ' + score;
 
 }
 
-function collisionHandler (obj1, obj2) {
+function dustiWallCollision (obj1, obj2) {
 
     lives--;
     livesText.text = 'Lives: ' + lives;
@@ -94,8 +97,8 @@ function collisionHandler (obj1, obj2) {
     }
     else
     {
-        dust.reset(700, 200);
-        dust.body.velocity.setTo(-200,-200);
+        dust.reset(700, Math.floor(Math.random() * (600)));
+        dust.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
     }
 }
 
@@ -105,4 +108,3 @@ function gameOver () {
     introText.visible = true;
 
 }
-
