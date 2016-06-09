@@ -1,20 +1,26 @@
-var game = new Phaser.Game(800, 600, Phaser.CANVAS, 'phaser-example', { preload: preload, create: create, update: update });
-
 function preload() {
 
-  game.load.image('bar', 'images/bar.png');
+	game.load.image('bar', 'images/bar.png');
 	game.load.image('bg', 'images/bg.png');
-  game.load.image('dust', 'images/dust.png');
+	game.load.image('dust', 'images/dust.png');
 
 }
 
-var sprite;
 var cursors;
-var image;
+var bar;
+var iWall;
+var dust;
+var lives = 3;
+var score = 0;
+var scoreText;
+var livesText;
+var introText;
 
 function create() 
 {
-
+    scoreText = game.add.text(680, 550, 'Score: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
+    livesText = game.add.text(32, 550, 'Lives: 3', { font: "20px Arial", fill: "#ffffff", align: "left" });
+    
     //	Enable p2 physics
 	  game.physics.startSystem(Phaser.Physics.P2JS);
 
@@ -22,54 +28,80 @@ function create()
     game.physics.p2.defaultRestitution = 0.8;
 
     //  Add a sprite
-	  sprite = game.add.sprite(200, 300, 'bar');
+	  bar = game.add.sprite(200, 300, 'bar');
+	  bar.name = "bar";
 
     //  Enable if for physics. This creates a default rectangular body.
-	  game.physics.p2.enable(sprite);
+	  game.physics.p2.enable(bar);
 
     //  Modify a few body properties
-	  sprite.body.setZeroDamping();
-	  sprite.body.fixedRotation = true;
+	  bar.body.setZeroDamping();
+	  bar.body.fixedRotation = true;
 
     cursors = game.input.keyboard.createCursorKeys();
     
-    //  This creates a simple sprite that is using our loaded image and
-    //  displays it on-screen
-    //  and assign it to a variable
-    image = game.add.sprite(700, 300, 'dust');
+    iWall = game.add.sprite(1, 200, 'iWall');
+    iWall.name = 'iWall';
 
-    game.physics.enable(image, Phaser.Physics.ARCADE);
-    
-    //  This gets it moving
-    image.body.velocity.setTo(-200,-200);
-    
-    //  This makes the game world bounce-able
-    image.body.collideWorldBounds = true;
-    
-    //  This sets the image bounce energy for the horizontal 
-    //  and vertical vectors. "1" is 100% energy return
-    image.body.bounce.set(1);
+    game.physics.enable(iWall, Phaser.Physics.ARCADE);
+    //  In this example the new collision box is much larger than the original sprite
+    iWall.body.setSize(1, 600, 1, -200);
+    iWall.body.immovable = true;
 
+    dust = game.add.sprite(700, 200, 'dust');
+    dust.name = 'dust';
+    game.physics.enable(dust, Phaser.Physics.ARCADE);
+    dust.body.velocity.setTo(-200,-200);
+    dust.body.collideWorldBounds = true;
+    dust.body.bounce.set(1);
+    
 }
 
-function update() {
-
-	  sprite.body.setZeroVelocity();
+function update() 
+{
+    bar.body.setZeroVelocity();
 
     if (cursors.up.isDown)
     {
-    	sprite.body.moveUp(400);
+    	bar.body.moveUp(400);
     }
     else if (cursors.down.isDown)
     {
-    	sprite.body.moveDown(400);
+    	bar.body.moveDown(400);
     }
+    
+    game.physics.arcade.collide(bar, dust, collisionHandler1, null, this);
+    game.physics.arcade.collide(iWall, dust, collisionHandler, null, this);
 
 }
 
-function render() 
-{
+function collisionHandler1 (obj1, obj2) {
 
-
+    dust.kill();
 
 }
+
+function collisionHandler (obj1, obj2) {
+
+    lives--;
+    livesText.text = 'Lives: ' + lives;
+    dust.kill();
+
+    if (lives === 0)
+    {
+        gameOver();
+    }
+    else
+    {
+        dust.reset(700, 200);
+        dust.body.velocity.setTo(-200,-200);
+    }
+}
+
+function gameOver () {
+    
+    introText.text = 'Game Over!';
+    introText.visible = true;
+
+}
+
