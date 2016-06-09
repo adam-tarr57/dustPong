@@ -28,8 +28,9 @@ function create()
     game.physics.p2.defaultRestitution = 0.8;
 
     //  Add a sprite
-	  bar = game.add.sprite(200, 300, 'bar');
-	  bar.name = "bar";
+	  bar = game.add.sprite(100, game.world.centerY, 'bar', 'images/bar.png');
+	  bar.anchor.setTo(0.5, 0.5);
+	  
 
     //  Enable if for physics. This creates a default rectangular body.
 	  game.physics.p2.enable(bar);
@@ -48,7 +49,7 @@ function create()
     iWall.body.setSize(1, 600, 1, -200);
     iWall.body.immovable = true;
 
-    dust = game.add.sprite(700, 200, 'dust');
+    dust = game.add.sprite(700, 200, 'dust', 'images/dust.png');
     dust.name = 'dust';
     game.physics.enable(dust, Phaser.Physics.ARCADE);
     dust.body.velocity.setTo(-200,-200);
