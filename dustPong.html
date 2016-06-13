@@ -1,0 +1,141 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<title>dustPong</title>
+	<script type="text/javascript" src="js/phaser.min.js"></script>
+	<style type="text/css">
+		body { margin: 0;}
+	</style>
+</head>
+<body>
+<h1>dustPong</h1>
+
+<script type="text/javascript">
+	
+var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
+
+function preload() {
+
+	//load images
+	game.load.image('paddle', 'images/paddle.png');
+	game.load.image('bg', 'images/bg.png');
+	game.load.image('dustParticle', 'images/dustParticle.png');
+}
+
+//varibales needed for objects
+var cursors;
+var paddle;
+var iWall;
+var dustParticle;
+//variables for text
+var lives = 5;
+var livesText;
+var score = 0;
+var scoreText;
+var introText;
+var outroText;
+
+function create() {
+	
+	//Display starting lives and score text
+	scoreText = game.add.text(680, 550, 'Score: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
+    livesText = game.add.text(32, 550, 'Lives: 5', { font: "20px Arial", fill: "#ffffff", align: "left" });
+
+    //	Enable p2 physics
+	game.physics.startSystem(Phaser.Physics.P2JS);
+
+    //  Make things a bit more bouncey
+    game.physics.p2.defaultRestitution = 0.8;
+
+    //  Add a sprite
+	paddle = game.add.sprite(100, game.world.centerY, 'paddle', 'images/paddle.png');
+	paddle.anchor.setTo(0.5, 0.5);
+	
+    //  Enable if for physics. This creates a default rectangular body.
+	game.physics.p2.enable(paddle);
+
+    //  Modify a few body properties
+	paddle.body.setZeroDamping();
+	paddle.body.fixedRotation = true;
+
+	//player input
+    cursors = game.input.keyboard.createCursorKeys();
+
+	//Invisible hitbox for dustParticle to collide with    
+    iWall = game.add.sprite(1, 200, 'iWall');
+    iWall.name = 'iWall';
+    game.physics.enable(iWall, Phaser.Physics.ARCADE);
+    iWall.body.setSize(1, 600, 1, -200);
+    iWall.body.immovable = true;
+
+    //create dustParticle, give it random velocity and starting location
+    dustParticle = game.add.sprite(700, Math.floor(Math.random() * (600)), 'dustParticle');
+    dustParticle.name = 'dustParticle';
+    game.physics.enable(dustParticle, Phaser.Physics.ARCADE);
+    dustParticle.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
+    dustParticle.body.collideWorldBounds = true;
+    dustParticle.body.bounce.set(1);
+    
+}
+
+function update() 
+{
+	//set paddle velocity to zero, only moves with player input
+    paddle.body.setZeroVelocity();
+    
+    //user controls up/down arrow keys and paddle speed
+    if (cursors.up.isDown)
+    {
+    	paddle.body.moveUp(400);
+    }
+    else if (cursors.down.isDown)
+    {
+    	paddle.body.moveDown(400);
+    }
+    
+    //collision detection for paddle and iWall
+    game.physics.arcade.collide(paddle, dustParticle, dustpaddleCollision, null, this);
+    game.physics.arcade.collide(iWall, dustParticle, dustiWallCollision, null, this);
+
+}
+//collision call with paddle
+function dustpaddleCollision (obj1, obj2) {
+
+	//destroy dustParticle instance
+    dustParticle.kill();
+    
+    //increment score and display new score
+    score += 10;
+    scoreText.text ='Score: ' + score;
+
+}
+//collision call with iWall
+function dustiWallCollision (obj1, obj2) {
+
+	//decrease lives, disply new lives, destroy dustParticle instance
+    lives--;
+    livesText.text = 'Lives: ' + lives;
+    dustParticle.kill();
+
+    //when lives = 0, gameover otherwise create new instance of dustParticle
+    if (lives === 0)
+    {
+        gameOver();
+    }
+    else
+    {
+        dustParticle.reset(700, Math.floor(Math.random() * (600)));
+        dustParticle.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
+    }
+}
+//gameOver call, displays 'Game over' to user
+function gameOver () {
+    
+    introText.text = 'Game Over!';
+    introText.visible = true;
+
+}
+</script>
+
+</body>
+</html>
