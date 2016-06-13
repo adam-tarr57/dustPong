@@ -1,11 +1,14 @@
-<!DOCTYPE HTML>
-<html>
-<head>
-	<title>dustPong</title>
-	<script type="text/javascript" src="js/phaser.min.js"></script>
-	<style type="text/css">
-		body { margin: 0;}
-	</style>
+<!doctype html> 
+<html lang="en"> 
+<head> 
+	<meta charset="UTF-8" />
+    <title>Phaser - Making your first game, part 9</title>
+	<script type="text/javascript" src="js/phaser.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
 </head>
 <body>
 <h1>dustPong</h1>
@@ -20,6 +23,7 @@ function preload() {
 	game.load.image('paddle', 'images/paddle.png');
 	game.load.image('bg', 'images/bg.png');
 	game.load.image('dustParticle', 'images/dustParticle.png');
+	game.load.image('iWall', 'images/iWall.png');
 }
 
 //varibales needed for objects
@@ -34,29 +38,26 @@ var score = 0;
 var scoreText;
 var introText;
 var outroText;
+var bg;
 
 function create() {
+    
+    bg = game.add.tileSprite(0, 0, 800, 600, 'bg');
 	
 	//Display starting lives and score text
 	scoreText = game.add.text(680, 550, 'Score: 0', { font: "20px Arial", fill: "#ffffff", align: "left" });
     livesText = game.add.text(32, 550, 'Lives: 5', { font: "20px Arial", fill: "#ffffff", align: "left" });
 
-    //	Enable p2 physics
-	game.physics.startSystem(Phaser.Physics.P2JS);
+    //	Enable physics
+    game.physics.startSystem(Phaser.Physics.P2JS);
 
-    //  Make things a bit more bouncey
-    game.physics.p2.defaultRestitution = 0.8;
-
-    //  Add a sprite
-	paddle = game.add.sprite(100, game.world.centerY, 'paddle', 'images/paddle.png');
-	paddle.anchor.setTo(0.5, 0.5);
-	
-    //  Enable if for physics. This creates a default rectangular body.
-	game.physics.p2.enable(paddle);
-
-    //  Modify a few body properties
-	paddle.body.setZeroDamping();
-	paddle.body.fixedRotation = true;
+    //add player paddle
+	paddle = game.add.sprite(100, game.world.centerY, 'paddle');
+    paddle.anchor.setTo(0.5, 0.5);
+    game.physics.p2.enable(paddle);
+    paddle.body.collideWorldBounds = true;
+    paddle.body.defaultRestitution = 0.8;
+    paddle.body.immovable = true;
 
 	//player input
     cursors = game.input.keyboard.createCursorKeys();
@@ -64,14 +65,14 @@ function create() {
 	//Invisible hitbox for dustParticle to collide with    
     iWall = game.add.sprite(1, 200, 'iWall');
     iWall.name = 'iWall';
-    game.physics.enable(iWall, Phaser.Physics.ARCADE);
+    game.physics.enable(iWall);
     iWall.body.setSize(1, 600, 1, -200);
     iWall.body.immovable = true;
 
     //create dustParticle, give it random velocity and starting location
     dustParticle = game.add.sprite(700, Math.floor(Math.random() * (600)), 'dustParticle');
     dustParticle.name = 'dustParticle';
-    game.physics.enable(dustParticle, Phaser.Physics.ARCADE);
+    game.physics.enable(dustParticle);
     dustParticle.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
     dustParticle.body.collideWorldBounds = true;
     dustParticle.body.bounce.set(1);
@@ -96,21 +97,35 @@ function update()
     //collision detection for paddle and iWall
     game.physics.arcade.collide(paddle, dustParticle, dustpaddleCollision, null, this);
     game.physics.arcade.collide(iWall, dustParticle, dustiWallCollision, null, this);
+    
+    //overlap detection for paddle with dust
+    game.physics.arcade.overlap(paddle, dustParticle, dustPaddleOlap, null, this);
 
 }
+
+//dust overlap with paddle
+function dustPaddleOlap (paddle, dustParticle){
+	//destroy dustParticle instance
+    dustParticle.kill();
+    
+    //increment score and display new score
+    score += 10;
+    scoreText.text = 'Score: ' + score;
+}
+
 //collision call with paddle
-function dustpaddleCollision (obj1, obj2) {
+function dustpaddleCollision (paddle, dustParticle) {
 
 	//destroy dustParticle instance
     dustParticle.kill();
     
     //increment score and display new score
     score += 10;
-    scoreText.text ='Score: ' + score;
+    scoreText.text = 'Score: ' + score;
 
 }
 //collision call with iWall
-function dustiWallCollision (obj1, obj2) {
+function dustiWallCollision (iWall, dustParticle) {
 
 	//decrease lives, disply new lives, destroy dustParticle instance
     lives--;
@@ -120,7 +135,14 @@ function dustiWallCollision (obj1, obj2) {
     //when lives = 0, gameover otherwise create new instance of dustParticle
     if (lives === 0)
     {
-        gameOver();
+        // gameOver();
+        
+        outroText.text='GAME OVER \n Click to restart';
+        outroText.visible = true;
+
+        //the "click to restart" handler
+        //game.input.onTap.addOnce(restart,this);
+
     }
     else
     {
@@ -131,8 +153,9 @@ function dustiWallCollision (obj1, obj2) {
 //gameOver call, displays 'Game over' to user
 function gameOver () {
     
-    introText.text = 'Game Over!';
-    introText.visible = true;
+    outroText.visible = true;
+    outroText.text = 'Game Over!';
+    
 
 }
 </script>
