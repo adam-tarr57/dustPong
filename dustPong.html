@@ -2,17 +2,13 @@
 <html lang="en"> 
 <head> 
 	<meta charset="UTF-8" />
-    <title>Phaser - Making your first game, part 9</title>
+    <title>dustPong</title>
 	<script type="text/javascript" src="js/phaser.js"></script>
-    <style type="text/css">
-        body {
-            margin: 0;
-        }
-    </style>
+    <link rel="stylesheet" type="text/css" href="mystyle.css">
 </head>
 <body>
 <h1>dustPong</h1>
-
+<div>
 <script type="text/javascript">
 	
 var game = new Phaser.Game(800, 600, Phaser.AUTO, '', { preload: preload, create: create, update: update });
@@ -39,6 +35,8 @@ var scoreText;
 var introText;
 var outroText;
 var bg;
+var h = 600;
+var w = 800;
 
 function create() {
     
@@ -49,15 +47,17 @@ function create() {
     livesText = game.add.text(32, 550, 'Lives: 5', { font: "20px Arial", fill: "#ffffff", align: "left" });
 
     //	Enable physics
-    game.physics.startSystem(Phaser.Physics.P2JS);
+    game.physics.startSystem(Phaser.Physics.ARCADE);
 
     //add player paddle
 	paddle = game.add.sprite(100, game.world.centerY, 'paddle');
-    paddle.anchor.setTo(0.5, 0.5);
-    game.physics.p2.enable(paddle);
+    game.physics.enable(paddle);
     paddle.body.collideWorldBounds = true;
     paddle.body.defaultRestitution = 0.8;
     paddle.body.immovable = true;
+    paddle.body.checkCollision.up = false;
+    paddle.body.checkCollision.left = false;
+    paddle.body.checkCollision.down = false;
 
 	//player input
     cursors = game.input.keyboard.createCursorKeys();
@@ -73,83 +73,147 @@ function create() {
     dustParticle = game.add.sprite(700, Math.floor(Math.random() * (600)), 'dustParticle');
     dustParticle.name = 'dustParticle';
     game.physics.enable(dustParticle);
-    dustParticle.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
+    dustParticle.body.velocity.setTo(Math.floor(Math.random() * (500)+50)*-1,Math.floor(Math.random() * (500)+50)*-1);
     dustParticle.body.collideWorldBounds = true;
     dustParticle.body.bounce.set(1);
-    
+
+    //pause menu
+        pause_label = game.add.text(w-100, 20, 'Pause', { font: '24px Arial', fill: '#fff' });
+        pause_label.inputEnabled = true;
+        pause_label.events.onInputUp.add(function () {
+        // When the paus button is pressed, we pause the game
+        game.paused = true;
+
+        // Then add the menu
+        menu = game.add.sprite(w/2, h/2, 'menu');
+        menu.anchor.setTo(0.5, 0.5);
+
+        // And a label to illustrate which menu item was chosen. (This is not necessary)
+        choiseLabel = game.add.text(w/2, h-150, 'Click outside menu to continue', { font: '30px Arial', fill: 'black' });
+        choiseLabel.anchor.setTo(0.5, 0.5);
+    });
+
+    // Add a input listener that can help us return from being paused
+    game.input.onDown.add(unpause, self);
+
+    // And finally the method that handels the pause menu
+    function unpause(event){
+        // Only act if paused
+        if(game.paused){
+            // Calculate the corners of the menu
+            var x1 = w/2 - 270/2, x2 = w/2 + 270/2,
+                y1 = h/2 - 180/2, y2 = h/2 + 180/2;
+
+            // Check if the click was inside the menu
+            if(event.x > x1 && event.x < x2 && event.y > y1 && event.y < y2 ){
+                // The choicemap is an array that will help us see which item was clicked
+                var choisemap = ['one', 'two', 'three', 'four', 'five', 'six'];
+
+                // Get menu local coordinates for the click
+                var x = event.x - x1,
+                    y = event.y - y1;
+
+                // Calculate the choice 
+                var choise = Math.floor(x / 90) + 3*Math.floor(y / 90);
+
+                // Display the choice
+                choiseLabel.text = 'You chose menu item: ' + choisemap[choise];
+            }
+            else{
+                // Remove the menu and the label
+                menu.destroy();
+                choiseLabel.destroy();
+
+                // Unpause the game
+                game.paused = false;
+            }
+        }
+    }
 }
 
 function update() 
 {
 	//set paddle velocity to zero, only moves with player input
-    paddle.body.setZeroVelocity();
+    paddle.body.velocity.y = 0;
     
     //user controls up/down arrow keys and paddle speed
     if (cursors.up.isDown)
     {
-    	paddle.body.moveUp(400);
+    	paddle.body.velocity.y = -400;
     }
     else if (cursors.down.isDown)
     {
-    	paddle.body.moveDown(400);
+    	paddle.body.velocity.y = 400;
     }
     
     //collision detection for paddle and iWall
     game.physics.arcade.collide(paddle, dustParticle, dustpaddleCollision, null, this);
     game.physics.arcade.collide(iWall, dustParticle, dustiWallCollision, null, this);
-    
-    //overlap detection for paddle with dust
-    game.physics.arcade.overlap(paddle, dustParticle, dustPaddleOlap, null, this);
 
-}
-
-//dust overlap with paddle
-function dustPaddleOlap (paddle, dustParticle){
-	//destroy dustParticle instance
-    dustParticle.kill();
-    
-    //increment score and display new score
-    score += 10;
-    scoreText.text = 'Score: ' + score;
 }
 
 //collision call with paddle
 function dustpaddleCollision (paddle, dustParticle) {
 
 	//destroy dustParticle instance
-    dustParticle.kill();
+    dustKill();
     
     //increment score and display new score
-    score += 10;
-    scoreText.text = 'Score: ' + score;
+    incScore();
+
+    //new dust instance
+    newDust();
 
 }
 //collision call with iWall
 function dustiWallCollision (iWall, dustParticle) {
 
 	//decrease lives, disply new lives, destroy dustParticle instance
-    lives--;
-    livesText.text = 'Lives: ' + lives;
-    dustParticle.kill();
+    decLives();
+    dustKill();
 
     //when lives = 0, gameover otherwise create new instance of dustParticle
+    livesCheck();
+}
+
+//Check if lives = 0, run game over or new dust
+function livesCheck (){
     if (lives === 0)
     {
-        // gameOver();
-        
-        outroText.text='GAME OVER \n Click to restart';
-        outroText.visible = true;
-
-        //the "click to restart" handler
-        //game.input.onTap.addOnce(restart,this);
-
+        gameOver();
     }
     else
     {
-        dustParticle.reset(700, Math.floor(Math.random() * (600)));
-        dustParticle.body.velocity.setTo(Math.floor(Math.random() * (300)+50)*-1,Math.floor(Math.random() * (300)+50)*-1);
+        newDust();
     }
 }
+
+//increment score
+function incScore(){
+
+    score += 10;
+    scoreText.text = 'Score: ' + score;
+}
+
+//decrement lives
+function decLives(){
+
+    lives--;
+    livesText.text = 'Lives: ' + lives;
+}
+
+//kill dust
+function dustKill (){
+
+    dustParticle.kill();
+}
+
+//new dustParticle
+function newDust (){
+    dustParticle.reset(700, Math.floor(Math.random() * (600)));
+    dustParticle.body.velocity.setTo(Math.floor(Math.random() * (500)+50)*-1,Math.floor(Math.random() * (500)+50)*-1);
+}
+
 //gameOver call, displays 'Game over' to user
 function gameOver () {
     
@@ -159,6 +223,6 @@ function gameOver () {
 
 }
 </script>
-
+</div>
 </body>
 </html>
